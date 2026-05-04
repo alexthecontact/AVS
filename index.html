@@ -145,9 +145,12 @@
       right: 0;
       height: 100vh;
       overflow-y: scroll;
-      overflow-x: hidden;
       padding: 0 20px 80px 20px;
     }
+
+    /* hide scrollbar visually but keep gutter */
+    #right-col::-webkit-scrollbar { width: 0px; }
+    #left-col::-webkit-scrollbar { width: 0px; }
 
     /* panel-inner: no extra padding, right-col padding handles everything */
     .panel-inner {
@@ -164,11 +167,11 @@
       margin-bottom: 28px;
     }
 
-    /* ALL content blocks constrained to column width */
-    .text-block, .img-block, .img-block img,
-    .grid-block, .video-block, .credits-block {
+    /* ALL content stays within column */
+    #right-col img, #right-col video {
       max-width: 100%;
-      box-sizing: border-box;
+      height: auto;
+      display: block;
     }
 
     /* Project panel — shown/hidden via JS */
@@ -533,6 +536,11 @@
       <div class="img-block">
         <img src="projects/07/001.jpg" alt="related paths 4 architects">
         <p class="img-caption">Exhibition view — Nipponbashi House, Osaka</p>
+      </div>
+
+      <div class="grid-block">
+        <img class="grid-img" src="projects/07/002.jpg" alt="related paths 4 architects">
+        <img class="grid-img" src="projects/07/003.jpg" alt="related paths 4 architects">
       </div>
 
       </div>
