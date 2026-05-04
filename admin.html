@@ -185,6 +185,20 @@ body {
 #empty-state { color: #aaa; padding: 60px 0; text-align: center; font-size: 13px; letter-spacing: 0.06em; }
 #sidebar::-webkit-scrollbar { width: 3px; }
 #sidebar::-webkit-scrollbar-thumb { background: #ddd; }
+
+/* Image picker modal */
+#picker-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; align-items: center; justify-content: center; }
+#picker-modal.open { display: flex; }
+#picker-box { background: #fff; width: 600px; max-width: 90vw; max-height: 80vh; overflow-y: auto; padding: 20px; }
+#picker-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+#picker-header span { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #555; }
+#picker-header button { background: none; border: none; cursor: pointer; font-size: 18px; color: #999; line-height: 1; }
+#picker-header button:hover { color: #111; }
+#picker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.picker-item { cursor: pointer; }
+.picker-item img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; border: 2px solid transparent; }
+.picker-item img:hover { border-color: #111; }
+.picker-item-name { font-size: 10px; color: #888; text-align: center; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -204,6 +218,14 @@ body {
 
 <input type="file" id="file-input" accept=".html" style="display:none" onchange="handleFileLoad(event)"/>
 <input type="file" id="folder-input" style="display:none" webkitdirectory multiple onchange="handleFolderLoad(event)"/>
+
+<!-- Image picker modal -->
+<div id="picker-modal">
+  <div id="picker-box">
+    <h3>Pick an image <button onclick="closePicker()">✕</button></h3>
+    <div id="picker-grid"></div>
+  </div>
+</div>
 
 <div id="app">
   <nav id="sidebar">
@@ -408,7 +430,9 @@ function renderBlock(pi, bi, b) {
     var folder = projects[pi].folder;
     var filename = b.src.replace('projects/' + folder + '/', '');
     var prev = getPreview(b.src);
-    var thumb = prev ? '<img src="' + prev + '" alt=""/>' : 'no preview';
+    var thumb = prev
+      ? '<img src="' + prev + '" alt="" style="width:100%;height:100%;object-fit:cover;cursor:pointer" onclick="openPicker(' + pi + ',' + bi + ',undefined)" title="Click to change"/>'
+      : '<div onclick="openPicker(' + pi + ',' + bi + ',undefined)" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;color:#999;background:#e8e8e6">pick</div>';
     return '<div class="block-wrap"><div class="media-row">' +
       '<div class="media-thumb" id="th-' + pi + '-' + bi + '">' + thumb + '</div>' +
       '<div class="media-meta">' +
@@ -440,10 +464,19 @@ function renderBlock(pi, bi, b) {
 
   if (b.type === 'grid') {
     var folder = projects[pi].folder;
+
+    // Get available images for this folder from loaded local files
+    var available = Object.keys(localFiles).filter(function(k) {
+      return k.startsWith('projects/' + folder + '/') &&
+             (k.match(/\.(jpg|jpeg|png|webp|gif)$/i));
+    });
+
     var imgs = b.images.map(function(img, gi) {
       var fn = img.src.replace('projects/' + folder + '/', '');
       var prev = getPreview(img.src);
-      var thmb = prev ? '<img class="grid-entry-thumb" src="' + prev + '" alt=""/>' : '';
+      var thmb = prev
+        ? '<img class="grid-entry-thumb" src="' + prev + '" alt="" onclick="openPicker(' + pi + ',' + bi + ',' + gi + ')" style="cursor:pointer" title="Click to change"/>'
+        : '<div onclick="openPicker(' + pi + ',' + bi + ',' + gi + ')" style="width:100%;height:36px;background:#e0e0de;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;color:#999;margin-bottom:4px">pick image</div>';
       return '<div class="grid-entry">' +
         '<button class="rm" onclick="removeGridImg(' + pi + ',' + bi + ',' + gi + ')">✕</button>' +
         thmb +
@@ -451,11 +484,13 @@ function renderBlock(pi, bi, b) {
         '<label class="span-label"><input type="checkbox" ' + (img.span?'checked':'') + ' onchange="projects[' + pi + '].blocks[' + bi + '].images[' + gi + '].span=this.checked;renderPanels()"/> full width</label>' +
         '</div>';
     }).join('');
+
     return '<div class="block-wrap">' +
       '<div class="grid-head"><span>Grid — ' + b.images.length + ' images — projects/' + folder + '/</span>' +
       '<div style="display:flex;gap:4px;align-items:center">' + moves +
       '<button class="btn-sm" onclick="addGridImg(' + pi + ',' + bi + ')">+img</button>' +
       '<button class="btn-del" onclick="removeBlock(' + pi + ',' + bi + ')">Remove</button></div></div>' +
+      (available.length > 0 ? '<div style="font-size:10px;color:#aaa;margin-bottom:8px">Click an image slot to pick from your loaded folder</div>' : '') +
       '<div class="grid-imgs-wrap">' + imgs + '</div></div>';
   }
 
@@ -603,7 +638,7 @@ function exportHTML() {
     var content = p.blocks.map(function(b) {
       if (b.type === 'text') return '      <div class="text-block">\n        ' + b.content + '\n      </div>';
       if (b.type === 'image') return '      <div class="img-block">\n        <img src="' + b.src + '" alt="' + p.title + '" />\n        <p class="img-caption">' + b.caption + '</p>\n      </div>';
-      if (b.type === 'video') return '      <div class="video-block">\n        <video controls playsinline>\n          <source src="' + b.src + '">\n        </video>\n        <p class="img-caption">' + b.caption + '</p>\n      </div>';
+      if (b.type === 'video') return '      <div class="video-block">\n        <video autoplay muted loop playsinline controlslist="nodownload">\n          <source src="' + b.src + '">\n        </video>\n        <p class="img-caption">' + b.caption + '</p>\n      </div>';
       if (b.type === 'grid') {
         var imgs = b.images.map(function(img){
           return '        <img class="grid-img' + (img.span?' span-full':'') + '" src="' + img.src + '" alt="' + p.title + '" />';
@@ -639,7 +674,66 @@ function exportHTML() {
   toast('Exported! Drag to Netlify to publish.');
 }
 
-// ── Utils ───────────────────────────────────────────────────────
+// ── Image picker ────────────────────────────────────────────────
+var pickerTarget = null; // { pi, bi, gi } or { pi, bi } for single image block
+
+function openPicker(pi, bi, gi) {
+  var folder = projects[pi].folder;
+  var prefix = 'projects/' + folder + '/';
+
+  // Get all images for this project folder
+  var images = Object.keys(localFiles).filter(function(k) {
+    return k.startsWith(prefix) && k.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+  }).sort();
+
+  if (images.length === 0) {
+    alert('No images found. Load your projects folder first using the bar at the top.');
+    return;
+  }
+
+  pickerTarget = { pi: pi, bi: bi, gi: gi };
+
+  var grid = document.getElementById('picker-grid');
+  grid.innerHTML = images.map(function(src) {
+    var name = src.replace(prefix, '');
+    return '<div class="picker-item" onclick="pickImage(\'' + src.replace(/'/g,"\\'") + '\')">' +
+      '<img src="' + localFiles[src] + '" alt="' + name + '"/>' +
+      '<div class="picker-item-name">' + name + '</div>' +
+      '</div>';
+  }).join('');
+
+  document.getElementById('picker-modal').classList.add('open');
+}
+
+function closePicker() {
+  document.getElementById('picker-modal').classList.remove('open');
+  pickerTarget = null;
+}
+
+function pickImage(src) {
+  if (!pickerTarget) return;
+  var pi = pickerTarget.pi;
+  var bi = pickerTarget.bi;
+  var gi = pickerTarget.gi;
+
+  if (gi !== undefined) {
+    // Grid image slot
+    projects[pi].blocks[bi].images[gi].src = src;
+  } else {
+    // Single image block
+    projects[pi].blocks[bi].src = src;
+  }
+
+  closePicker();
+  renderPanels();
+}
+
+// Close picker on backdrop click
+document.getElementById('picker-modal').addEventListener('click', function(e) {
+  if (e.target === this) closePicker();
+});
+
+
 function esc(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
