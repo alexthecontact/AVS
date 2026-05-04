@@ -144,12 +144,14 @@
     /* ── RIGHT COLUMN ────────────────────────────────────────── */
     #right-col {
       flex: 1;
+      min-width: 0; /* prevents flex child from overflowing */
       height: 100vh;
       position: sticky;
       top: 0;
       overflow-y: scroll;
       overflow-x: hidden;
       padding: 0 20px 80px 20px;
+      box-sizing: border-box;
     }
 
     /* panel-inner: no extra padding, right-col padding handles everything */
