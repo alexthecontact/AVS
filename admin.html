@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AVS — Site Editor</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Yu Gothic', 'YuGothic', sans-serif;
+  font-weight: 300;
+  background: #f4f4f2;
+  color: #111;
+  font-size: 13px;
+  min-height: 100vh;
+}
+
+/* Header */
+#header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 48px;
+  background: #111;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  z-index: 200;
+}
+#header h1 { font-size: 12px; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; }
+#header-actions { display: flex; gap: 10px; align-items: center; }
+
+/* Folder bar */
+#folder-bar {
+  position: fixed;
+  top: 48px; left: 0; right: 0;
+  height: 32px;
+  background: #1a1a1a;
+  color: #aaa;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 28px;
+  font-size: 11px;
+  z-index: 199;
+}
+#folder-bar label {
+  background: #333;
+  color: #ddd;
+  padding: 3px 12px;
+  cursor: pointer;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+#folder-bar label:hover { background: #444; }
+
+/* Buttons */
+.btn {
+  padding: 7px 16px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.btn-white { background: #fff; color: #111; }
+.btn-white:hover { background: #e8e8e6; }
+.btn-ghost-label {
+  display: inline-block;
+  padding: 7px 16px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: transparent;
+  color: #888;
+  border: 1px solid #444;
+}
+.btn-ghost-label:hover { color: #fff; border-color: #fff; }
+.btn-ghost { background: transparent; color: #888; border: 1px solid #444; padding: 7px 16px; font-family: inherit; font-size: 12px; cursor: pointer; letter-spacing: 0.08em; text-transform: uppercase; }
+.btn-ghost:hover { color: #111; border-color: #111; }
+.btn-sm { background: #111; color: #fff; padding: 4px 10px; font-size: 11px; font-family: inherit; cursor: pointer; border: none; letter-spacing: 0.06em; }
+.btn-sm:hover { background: #333; }
+.btn-del { background: transparent; color: #c0392b; border: 1px solid #c0392b; padding: 3px 8px; font-size: 11px; font-family: inherit; cursor: pointer; }
+.btn-del:hover { background: #c0392b; color: #fff; }
+.btn-move { background: none; border: 1px solid #ddd; color: #888; width: 24px; height: 24px; cursor: pointer; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; font-family: inherit; }
+.btn-move:hover { border-color: #111; color: #111; }
+
+/* Layout */
+#app { display: flex; padding-top: 80px; min-height: 100vh; }
+
+/* Sidebar */
+#sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: #fff;
+  border-right: 1px solid #e0e0de;
+  position: fixed;
+  top: 80px; bottom: 0;
+  overflow-y: auto;
+  padding: 20px 0;
+}
+.sidebar-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #999; padding: 0 20px 8px; display: block; }
+.sidebar-item { padding: 8px 20px; cursor: pointer; font-size: 13px; color: #333; border-left: 2px solid transparent; display: flex; gap: 8px; align-items: center; }
+.sidebar-item:hover { background: #f4f4f2; }
+.sidebar-item.active { border-left-color: #111; background: #f4f4f2; font-weight: 500; }
+.sidebar-item .num { font-size: 10px; color: #bbb; min-width: 18px; }
+
+/* Main */
+#main { margin-left: 220px; flex: 1; padding: 28px 36px 80px; }
+
+/* New project form */
+#new-form { background: #fff; border: 1px solid #e0e0de; padding: 18px; margin-bottom: 20px; display: none; }
+#new-form.open { display: block; }
+#new-form h3 { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #555; margin-bottom: 14px; }
+.form-row { display: flex; gap: 10px; align-items: flex-end; }
+.form-row .field { flex: 1; }
+
+/* Fields */
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #888; margin-bottom: 5px; }
+.field input[type=text], .field textarea {
+  width: 100%; padding: 8px 10px; border: 1px solid #ddd; background: #fff;
+  font-family: inherit; font-size: 13px; font-weight: 300; color: #111; outline: none; resize: vertical;
+}
+.field input[type=text]:focus, .field textarea:focus { border-color: #111; }
+.field textarea { min-height: 80px; line-height: 1.6; }
+
+/* Section head */
+.sec-head { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #888; margin: 24px 0 10px; display: flex; align-items: center; justify-content: space-between; }
+.sec-head-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+
+/* Panel */
+.panel-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #999; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #e0e0de; }
+
+/* Block wrappers */
+.block-wrap { background: #fff; border: 1px solid #e0e0de; margin-bottom: 8px; padding: 12px; }
+.block-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f0f0ee; }
+.block-textarea { width: 100%; border: none; background: transparent; font-family: inherit; font-size: 13px; font-weight: 300; color: #111; resize: vertical; outline: none; min-height: 70px; line-height: 1.6; display: block; }
+
+/* Image/video block */
+.media-row { display: flex; gap: 12px; align-items: flex-start; }
+.media-thumb { width: 80px; height: 60px; flex-shrink: 0; background: #e8e8e6; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #bbb; overflow: hidden; }
+.media-thumb img, .media-thumb video { width: 100%; height: 100%; object-fit: cover; }
+.media-meta { flex: 1; }
+.path-row { display: flex; align-items: center; gap: 5px; margin-bottom: 6px; }
+.path-row span { font-size: 11px; color: #aaa; white-space: nowrap; }
+.path-row input { border: 1px solid #ddd; padding: 4px 7px; font-family: inherit; font-size: 12px; outline: none; flex: 1; min-width: 0; }
+.path-row input:focus { border-color: #111; }
+.caption-inp { width: 100%; border: 1px solid #e8e8e6; padding: 5px 8px; font-family: inherit; font-size: 12px; color: #111; outline: none; background: #fafaf9; }
+.caption-inp:focus { border-color: #111; }
+.media-side { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+
+/* Grid block */
+.grid-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #888; }
+.grid-imgs-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.grid-entry { background: #f4f4f2; border: 1px solid #e0e0de; padding: 8px; position: relative; }
+.grid-entry-thumb { width: 100%; height: 36px; object-fit: cover; display: block; margin-bottom: 4px; }
+.grid-entry input { width: 100%; border: none; background: transparent; font-family: inherit; font-size: 11px; outline: none; margin-bottom: 3px; }
+.grid-entry .rm { position: absolute; top: 3px; right: 3px; background: none; border: none; color: #ccc; cursor: pointer; font-size: 12px; }
+.grid-entry .rm:hover { color: #c0392b; }
+.span-label { font-size: 10px; color: #aaa; display: flex; align-items: center; gap: 3px; cursor: pointer; }
+
+/* Credits block */
+.cred-title-inp { width: 100%; border: none; border-bottom: 1px solid #e0e0de; padding: 3px 0 8px; font-family: inherit; font-size: 13px; font-weight: bold; color: #111; outline: none; background: transparent; margin-bottom: 10px; }
+.cred-row { display: flex; gap: 6px; margin-bottom: 5px; align-items: center; }
+.cred-row input { border: 1px solid #e8e8e6; padding: 4px 7px; font-family: inherit; font-size: 12px; color: #111; outline: none; background: #fafaf9; flex: 1; }
+.cred-row input:first-child { font-weight: bold; max-width: 150px; }
+.cred-row input:focus { border-color: #111; }
+.cred-row .rm { background: none; border: none; color: #ccc; cursor: pointer; font-size: 13px; }
+.cred-row .rm:hover { color: #c0392b; }
+
+/* Danger */
+.danger-zone { margin-top: 36px; padding-top: 12px; border-top: 1px solid #f0e0de; }
+.danger-zone p { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #c0392b; margin-bottom: 8px; }
+
+/* Toast */
+#toast { position: fixed; bottom: 24px; right: 24px; background: #111; color: #fff; padding: 10px 18px; font-size: 12px; opacity: 0; transform: translateY(6px); transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 999; }
+#toast.show { opacity: 1; transform: translateY(0); }
+
+#empty-state { color: #aaa; padding: 60px 0; text-align: center; font-size: 13px; letter-spacing: 0.06em; }
+#sidebar::-webkit-scrollbar { width: 3px; }
+#sidebar::-webkit-scrollbar-thumb { background: #ddd; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>AVS — Site Editor</h1>
+  <div id="header-actions">
+    <label for="file-input" class="btn-ghost-label">Load index.html</label>
+    <button class="btn btn-white" onclick="exportHTML()">↓ Export index.html</button>
+  </div>
+</div>
+
+<div id="folder-bar">
+  <label for="folder-input">📁 Load projects folder</label>
+  <span id="folder-status">No folder loaded — images will show as paths only</span>
+</div>
+
+<input type="file" id="file-input" accept=".html" style="display:none" onchange="handleFileLoad(event)"/>
+<input type="file" id="folder-input" style="display:none" webkitdirectory multiple onchange="handleFolderLoad(event)"/>
+
+<div id="app">
+  <nav id="sidebar">
+    <span class="sidebar-label">Projects</span>
+    <div id="project-list"></div>
+    <div style="padding:12px 20px 0">
+      <button class="btn-sm" onclick="toggleNewForm()" style="width:100%">+ New Project</button>
+    </div>
+  </nav>
+
+  <main id="main">
+    <div id="new-form">
+      <h3>New Project</h3>
+      <div class="form-row">
+        <div class="field"><label>Title</label><input type="text" id="new-title" placeholder="casa nova"/></div>
+        <div class="field" style="max-width:90px"><label>Folder #</label><input type="text" id="new-num" placeholder="08"/></div>
+        <button class="btn-sm" onclick="createProject()" style="margin-bottom:1px">Create</button>
+        <button class="btn-ghost" onclick="toggleNewForm()" style="margin-bottom:1px">Cancel</button>
+      </div>
+    </div>
+    <div id="panels"></div>
+    <div id="empty-state">Load your <strong>index.html</strong> to start editing →</div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+var siteHTML   = '';
+var projects   = [];
+var active     = null;
+var localFiles = {};
+
+// ── File loading ───────────────────────────────────────────────
+function handleFileLoad(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      siteHTML = ev.target.result;
+      parseProjects();
+      renderSidebar();
+      if (projects.length > 0) setActive(0);
+      document.getElementById('empty-state').style.display = 'none';
+      toast('Loaded ' + file.name);
+    } catch(err) {
+      alert('Error: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.onerror = function() { alert('Could not read file.'); };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function handleFolderLoad(e) {
+  Object.values(localFiles).forEach(function(u){ URL.revokeObjectURL(u); });
+  localFiles = {};
+  var count = 0;
+  Array.from(e.target.files).forEach(function(file) {
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
+    var path = file.webkitRelativePath || file.name;
+    if (!path.startsWith('projects/')) path = 'projects/' + path;
+    localFiles[path] = URL.createObjectURL(file);
+    count++;
+  });
+  document.getElementById('folder-status').textContent = '✓ ' + count + ' files loaded';
+  if (active !== null) renderPanels();
+  toast(count + ' files loaded');
+  e.target.value = '';
+}
+
+function getPreview(src) {
+  return localFiles[src] || null;
+}
+
+// ── Parse ──────────────────────────────────────────────────────
+function parseProjects() {
+  var parser = new DOMParser();
+  var doc = parser.parseFromString(siteHTML, 'text/html');
+  var panels = doc.querySelectorAll('.project-panel');
+
+  projects = Array.from(panels).map(function(panel, idx) {
+    var id    = panel.id || ('project-' + idx);
+    var titleEl = panel.querySelector('.project-title');
+    var title = titleEl ? titleEl.textContent.trim() : '';
+    var inner = panel.querySelector('.panel-inner') || panel;
+    var blocks = [];
+
+    Array.from(inner.children).forEach(function(node) {
+      var cl = node.classList;
+      if (cl.contains('text-block')) {
+        blocks.push({ type:'text', content:node.textContent.trim() });
+
+      } else if (cl.contains('img-block')) {
+        var img = node.querySelector('img');
+        var cap = node.querySelector('.img-caption');
+        blocks.push({ type:'image', src: img ? img.getAttribute('src')||'' : '', caption: cap ? cap.textContent.trim() : '' });
+
+      } else if (cl.contains('video-block')) {
+        var vsrc = '';
+        var vs = node.querySelector('video source');
+        var vv = node.querySelector('video');
+        if (vs) vsrc = vs.getAttribute('src') || '';
+        else if (vv) vsrc = vv.getAttribute('src') || '';
+        var vcap = node.querySelector('.img-caption');
+        blocks.push({ type:'video', src:vsrc, caption: vcap ? vcap.textContent.trim() : '' });
+
+      } else if (cl.contains('grid-block')) {
+        var images = Array.from(node.querySelectorAll('.grid-img')).map(function(img) {
+          return { src: img.getAttribute('src')||'', span: img.classList.contains('span-full') };
+        });
+        blocks.push({ type:'grid', images:images });
+
+      } else if (cl.contains('credits-block')) {
+        var ct = node.querySelector('.credits-title');
+        var credTitle = ct ? ct.textContent.trim() : 'Credits';
+        var rows = Array.from(node.querySelectorAll('.credit-row')).map(function(row) {
+          var role = row.querySelector('.credit-role');
+          var name = row.querySelector('.credit-name');
+          return {
+            role: role ? role.textContent.trim() : '',
+            name: (name ? name.textContent.trim() : '').replace(/^[\s\-]+/, '')
+          };
+        });
+        blocks.push({ type:'credits', title:credTitle, rows:rows });
+      }
+    });
+
+    var folder = String(idx + 1).padStart(2, '0');
+    for (var bi = 0; bi < blocks.length; bi++) {
+      var b = blocks[bi];
+      var src = '';
+      if (b.type === 'image' || b.type === 'video') src = b.src;
+      else if (b.type === 'grid' && b.images.length > 0) src = b.images[0].src;
+      var m = src.match(/projects\/(\d+)\//);
+      if (m) { folder = m[1]; break; }
+    }
+
+    return { id:id, title:title, blocks:blocks, folder:folder };
+  });
+}
+
+// ── Sidebar ─────────────────────────────────────────────────────
+function renderSidebar() {
+  document.getElementById('project-list').innerHTML = projects.map(function(p, i) {
+    return '<div class="sidebar-item ' + (active === i ? 'active' : '') + '" onclick="setActive(' + i + ')">' +
+      '<span class="num">' + p.folder + '</span><span>' + (p.title || 'Untitled') + '</span></div>';
+  }).join('');
+}
+
+function setActive(i) {
+  active = i;
+  renderSidebar();
+  renderPanels();
+}
+
+// ── Render panel ────────────────────────────────────────────────
+function renderPanels() {
+  var container = document.getElementById('panels');
+  if (active === null) { container.innerHTML = ''; return; }
+  var p = projects[active];
+  var i = active;
+
+  var blocksHTML = p.blocks.map(function(b, bi) { return renderBlock(i, bi, b); }).join('');
+
+  container.innerHTML =
+    '<div class="panel-label">Editing — project ' + p.folder + '</div>' +
+    '<div class="field"><label>Project Title</label>' +
+    '<input type="text" value="' + esc(p.title) + '" oninput="projects[' + i + '].title=this.value;renderSidebar()"/></div>' +
+    '<div class="sec-head"><span>Content — projects/' + p.folder + '/</span>' +
+    '<div class="sec-head-btns">' +
+    '<button class="btn-sm" onclick="addBlock(' + i + ',\'text\')">+Text</button>' +
+    '<button class="btn-sm" onclick="addBlock(' + i + ',\'image\')">+Image</button>' +
+    '<button class="btn-sm" onclick="addBlock(' + i + ',\'video\')">+Video</button>' +
+    '<button class="btn-sm" onclick="addBlock(' + i + ',\'grid\')">+Grid</button>' +
+    '<button class="btn-sm" onclick="addBlock(' + i + ',\'credits\')">+Credits</button>' +
+    '</div></div>' +
+    '<div id="blocks-list">' + blocksHTML + '</div>' +
+    '<div class="danger-zone"><p>Danger Zone</p>' +
+    '<button class="btn-del" onclick="deleteProject(' + i + ')">Delete project</button></div>';
+}
+
+function renderBlock(pi, bi, b) {
+  var moves =
+    '<div style="display:flex;gap:3px">' +
+    '<button class="btn-move" onclick="moveBlock(' + pi + ',' + bi + ',-1)">↑</button>' +
+    '<button class="btn-move" onclick="moveBlock(' + pi + ',' + bi + ',1)">↓</button>' +
+    '</div>';
+
+  if (b.type === 'text') {
+    return '<div class="block-wrap">' +
+      '<textarea class="block-textarea" oninput="projects[' + pi + '].blocks[' + bi + '].content=this.value">' + esc(b.content) + '</textarea>' +
+      '<div class="block-controls">' + moves + '<button class="btn-del" onclick="removeBlock(' + pi + ',' + bi + ')">Remove</button></div>' +
+      '</div>';
+  }
+
+  if (b.type === 'image') {
+    var folder = projects[pi].folder;
+    var filename = b.src.replace('projects/' + folder + '/', '');
+    var prev = getPreview(b.src);
+    var thumb = prev ? '<img src="' + prev + '" alt=""/>' : 'no preview';
+    return '<div class="block-wrap"><div class="media-row">' +
+      '<div class="media-thumb" id="th-' + pi + '-' + bi + '">' + thumb + '</div>' +
+      '<div class="media-meta">' +
+      '<label style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px">Filename</label>' +
+      '<div class="path-row"><span>projects/' + folder + '/</span>' +
+      '<input type="text" value="' + esc(filename) + '" placeholder="photo.jpg" oninput="setImgSrc(' + pi + ',' + bi + ',this.value)"/></div>' +
+      '<input class="caption-inp" type="text" placeholder="Caption (optional)" value="' + esc(b.caption) + '" oninput="projects[' + pi + '].blocks[' + bi + '].caption=this.value"/>' +
+      '</div>' +
+      '<div class="media-side">' + moves + '<button class="btn-del" onclick="removeBlock(' + pi + ',' + bi + ')" style="margin-top:4px">✕</button></div>' +
+      '</div></div>';
+  }
+
+  if (b.type === 'video') {
+    var folder = projects[pi].folder;
+    var filename = b.src.replace('projects/' + folder + '/', '');
+    var prev = getPreview(b.src);
+    var thumb = prev ? '<video src="' + prev + '" muted style="width:100%;height:100%;object-fit:cover"></video>' : '▶';
+    return '<div class="block-wrap"><div class="media-row">' +
+      '<div class="media-thumb">' + thumb + '</div>' +
+      '<div class="media-meta">' +
+      '<label style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px">Video filename</label>' +
+      '<div class="path-row"><span>projects/' + folder + '/</span>' +
+      '<input type="text" value="' + esc(filename) + '" placeholder="video.mp4" oninput="projects[' + pi + '].blocks[' + bi + '].src=\'projects/' + folder + '/\'+this.value"/></div>' +
+      '<input class="caption-inp" type="text" placeholder="Caption (optional)" value="' + esc(b.caption) + '" oninput="projects[' + pi + '].blocks[' + bi + '].caption=this.value"/>' +
+      '</div>' +
+      '<div class="media-side">' + moves + '<button class="btn-del" onclick="removeBlock(' + pi + ',' + bi + ')" style="margin-top:4px">✕</button></div>' +
+      '</div></div>';
+  }
+
+  if (b.type === 'grid') {
+    var folder = projects[pi].folder;
+    var imgs = b.images.map(function(img, gi) {
+      var fn = img.src.replace('projects/' + folder + '/', '');
+      var prev = getPreview(img.src);
+      var thmb = prev ? '<img class="grid-entry-thumb" src="' + prev + '" alt=""/>' : '';
+      return '<div class="grid-entry">' +
+        '<button class="rm" onclick="removeGridImg(' + pi + ',' + bi + ',' + gi + ')">✕</button>' +
+        thmb +
+        '<input type="text" value="' + esc(fn) + '" placeholder="photo.jpg" oninput="setGridImgSrc(' + pi + ',' + bi + ',' + gi + ',this.value)"/>' +
+        '<label class="span-label"><input type="checkbox" ' + (img.span?'checked':'') + ' onchange="projects[' + pi + '].blocks[' + bi + '].images[' + gi + '].span=this.checked;renderPanels()"/> full width</label>' +
+        '</div>';
+    }).join('');
+    return '<div class="block-wrap">' +
+      '<div class="grid-head"><span>Grid — ' + b.images.length + ' images — projects/' + folder + '/</span>' +
+      '<div style="display:flex;gap:4px;align-items:center">' + moves +
+      '<button class="btn-sm" onclick="addGridImg(' + pi + ',' + bi + ')">+img</button>' +
+      '<button class="btn-del" onclick="removeBlock(' + pi + ',' + bi + ')">Remove</button></div></div>' +
+      '<div class="grid-imgs-wrap">' + imgs + '</div></div>';
+  }
+
+  if (b.type === 'credits') {
+    var rows = b.rows.map(function(r, ri) {
+      return '<div class="cred-row">' +
+        '<input type="text" value="' + esc(r.role) + '" placeholder="role" oninput="projects[' + pi + '].blocks[' + bi + '].rows[' + ri + '].role=this.value"/>' +
+        '<input type="text" value="' + esc(r.name) + '" placeholder="name" oninput="projects[' + pi + '].blocks[' + bi + '].rows[' + ri + '].name=this.value"/>' +
+        '<button class="rm" onclick="removeCreditRow(' + pi + ',' + bi + ',' + ri + ')">✕</button></div>';
+    }).join('');
+    return '<div class="block-wrap">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+      '<span style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#888">Credits</span>' +
+      '<div style="display:flex;gap:4px">' + moves + '<button class="btn-del" onclick="removeBlock(' + pi + ',' + bi + ')">Remove</button></div></div>' +
+      '<input class="cred-title-inp" type="text" value="' + esc(b.title) + '" placeholder="Credits title" oninput="projects[' + pi + '].blocks[' + bi + '].title=this.value"/>' +
+      '<div>' + rows + '</div>' +
+      '<button class="btn-sm" style="margin-top:8px" onclick="addCreditRow(' + pi + ',' + bi + ')">+ Add row</button>' +
+      '</div>';
+  }
+
+  return '';
+}
+
+// ── Block actions ───────────────────────────────────────────────
+function addBlock(pi, type) {
+  var f = projects[pi].folder;
+  var base = 'projects/' + f + '/';
+  if (type === 'text')    projects[pi].blocks.push({ type:'text', content:'' });
+  if (type === 'image')   projects[pi].blocks.push({ type:'image', src:base, caption:'' });
+  if (type === 'video')   projects[pi].blocks.push({ type:'video', src:base, caption:'' });
+  if (type === 'grid')    projects[pi].blocks.push({ type:'grid', images:[{src:base,span:false},{src:base,span:false}] });
+  if (type === 'credits') projects[pi].blocks.push({ type:'credits', title:'Credits', rows:[{role:'project type',name:''},{role:'curator',name:''}] });
+  renderPanels();
+}
+
+function removeBlock(pi, bi) {
+  projects[pi].blocks.splice(bi, 1);
+  renderPanels();
+}
+
+function moveBlock(pi, bi, dir) {
+  var arr = projects[pi].blocks;
+  var ni = bi + dir;
+  if (ni < 0 || ni >= arr.length) return;
+  var tmp = arr[bi]; arr[bi] = arr[ni]; arr[ni] = tmp;
+  renderPanels();
+}
+
+function setImgSrc(pi, bi, filename) {
+  var folder = projects[pi].folder;
+  var src = 'projects/' + folder + '/' + filename;
+  projects[pi].blocks[bi].src = src;
+  var th = document.getElementById('th-' + pi + '-' + bi);
+  if (th) {
+    var prev = getPreview(src);
+    th.innerHTML = prev ? '<img src="' + prev + '" alt=""/>' : 'no preview';
+  }
+}
+
+function setGridImgSrc(pi, bi, gi, filename) {
+  var folder = projects[pi].folder;
+  projects[pi].blocks[bi].images[gi].src = 'projects/' + folder + '/' + filename;
+}
+
+function addGridImg(pi, bi) {
+  var f = projects[pi].folder;
+  projects[pi].blocks[bi].images.push({ src:'projects/'+f+'/', span:false });
+  renderPanels();
+}
+
+function removeGridImg(pi, bi, gi) {
+  projects[pi].blocks[bi].images.splice(gi, 1);
+  renderPanels();
+}
+
+function addCreditRow(pi, bi) {
+  projects[pi].blocks[bi].rows.push({ role:'', name:'' });
+  renderPanels();
+}
+
+function removeCreditRow(pi, bi, ri) {
+  projects[pi].blocks[bi].rows.splice(ri, 1);
+  renderPanels();
+}
+
+// ── Project actions ─────────────────────────────────────────────
+function toggleNewForm() {
+  var form = document.getElementById('new-form');
+  form.classList.toggle('open');
+  if (form.classList.contains('open')) {
+    var nums = projects.map(function(p){ return parseInt(p.folder)||0; });
+    var next = (Math.max.apply(null, [0].concat(nums)) + 1).toString().padStart(2,'0');
+    document.getElementById('new-num').value = next;
+    document.getElementById('new-title').focus();
+  }
+}
+
+function createProject() {
+  var title = document.getElementById('new-title').value.trim();
+  var folder = document.getElementById('new-num').value.trim().padStart(2,'0');
+  if (!title || !folder) { alert('Please fill in both fields.'); return; }
+  var id = title.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  projects.unshift({
+    id:id, title:title, folder:folder,
+    blocks:[
+      { type:'text', content:'Add your project description here.' },
+      { type:'image', src:'projects/'+folder+'/', caption:'' }
+    ]
+  });
+  document.getElementById('new-title').value = '';
+  document.getElementById('new-form').classList.remove('open');
+  active = 0;
+  renderSidebar();
+  renderPanels();
+  toast('Project "' + title + '" created');
+}
+
+function deleteProject(pi) {
+  if (!confirm('Delete "' + projects[pi].title + '"?')) return;
+  projects.splice(pi, 1);
+  active = projects.length > 0 ? 0 : null;
+  renderSidebar();
+  renderPanels();
+  if (active === null) document.getElementById('empty-state').style.display = '';
+  toast('Project deleted');
+}
+
+// ── Export ──────────────────────────────────────────────────────
+function exportHTML() {
+  if (!siteHTML) { alert('Load your index.html first.'); return; }
+
+  var parser = new DOMParser();
+  var doc = parser.parseFromString(siteHTML, 'text/html');
+
+  var ul = doc.querySelector('nav ul');
+  if (ul) {
+    ul.innerHTML = projects.map(function(p,i){
+      return '<li><a href="#" class="nav-link' + (i===0?' active':'') + '" data-project="' + p.id + '">' + p.title + '</a></li>';
+    }).join('\n');
+  }
+
+  doc.querySelectorAll('.project-panel').forEach(function(el){ el.remove(); });
+
+  var panelsHTML = projects.map(function(p, i) {
+    var content = p.blocks.map(function(b) {
+      if (b.type === 'text') return '      <div class="text-block">\n        ' + b.content + '\n      </div>';
+      if (b.type === 'image') return '      <div class="img-block">\n        <img src="' + b.src + '" alt="' + p.title + '" />\n        <p class="img-caption">' + b.caption + '</p>\n      </div>';
+      if (b.type === 'video') return '      <div class="video-block">\n        <video controls playsinline>\n          <source src="' + b.src + '">\n        </video>\n        <p class="img-caption">' + b.caption + '</p>\n      </div>';
+      if (b.type === 'grid') {
+        var imgs = b.images.map(function(img){
+          return '        <img class="grid-img' + (img.span?' span-full':'') + '" src="' + img.src + '" alt="' + p.title + '" />';
+        }).join('\n');
+        return '      <div class="grid-block">\n' + imgs + '\n      </div>';
+      }
+      if (b.type === 'credits') {
+        var rows = b.rows.map(function(r){
+          return '          <div class="credit-row"><span class="credit-role">' + r.role + '</span><span class="credit-name"> - ' + r.name + '</span></div>';
+        }).join('\n');
+        return '      <div class="credits-block">\n        <div class="credits-title">' + b.title + '</div>\n' + rows + '\n      </div>';
+      }
+      return '';
+    }).filter(Boolean).join('\n\n');
+
+    return '    <!-- PROJECT ' + p.folder + ': ' + p.title + ' -->\n' +
+      '    <div class="project-panel' + (i===0?' active':'') + '" id="' + p.id + '">\n' +
+      '      <h1 class="project-title">' + p.title + '</h1>\n' +
+      '      <div class="panel-inner">\n\n' + content + '\n\n      </div>\n    </div>';
+  }).join('\n\n');
+
+  var rightCol = doc.getElementById('right-col');
+  var tmp = doc.createElement('div');
+  tmp.innerHTML = panelsHTML;
+  while (tmp.firstChild) rightCol.appendChild(tmp.firstChild);
+
+  var output = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
+  var blob = new Blob([output], { type:'text/html' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'index.html';
+  a.click();
+  toast('Exported! Drag to Netlify to publish.');
+}
+
+// ── Utils ───────────────────────────────────────────────────────
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 3000);
+}
+</script>
+</body>
+</html>
