@@ -222,6 +222,7 @@
 
     .credits-block .credit-row {
       display: flex;
+      flex-wrap: wrap;
       gap: 0;
     }
 
@@ -229,10 +230,13 @@
       font-weight: bold;
       min-width: 0;
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .credits-block .credit-name {
       color: #111;
+      flex: 1;
+      min-width: 0;
     }
 
     /* ── Video block ─────────────────────────────────────────── */
@@ -437,7 +441,19 @@
         left: 0 !important;
       }
 
-      /* Bigger nav links on mobile — easier to tap */
+      /* Fix credits text overlap on mobile */
+      .credits-block .credit-row {
+        display: block !important;
+        margin-bottom: 6px;
+      }
+
+      .credits-block .credit-role {
+        white-space: normal !important;
+      }
+
+      .credits-block .credit-name {
+        display: inline;
+      }
       nav ul li a {
         font-size: 18px !important;
         line-height: 1 !important;
