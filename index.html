@@ -437,7 +437,18 @@
         left: 0 !important;
       }
 
-      /* Content fixed width on mobile */
+      /* Bigger nav links on mobile — easier to tap */
+      nav ul li a {
+        font-size: 18px !important;
+        line-height: 1 !important;
+        display: block;
+        padding: 10px 0;
+      }
+
+      nav .nav-label {
+        font-size: 13px !important;
+        margin-top: 8px;
+      }
       .panel-inner,
       .project-title,
       .grid-block {
@@ -1313,8 +1324,13 @@ The concept from the start was to create a central space where the entire family
 
       rightCol.scrollTo({ top: 0, behavior: 'smooth' });
 
-      // Close mobile menu if open
-      if (document.getElementById('left-col').classList.contains('mobile-open')) toggleMenu();
+      // On mobile: clicking a project should open the right col
+      if (window.innerWidth <= 768) {
+        const leftCol = document.getElementById('left-col');
+        if (!leftCol.classList.contains('mobile-open')) {
+          toggleMenu(); // slides left col out, right col in
+        }
+      }
 
       // Re-observe images in newly shown panel
       setTimeout(() => {
