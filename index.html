@@ -3,6 +3,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Alexandre Vicente Studio</title>
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="apple-touch-icon" href="favicon.png"/>
   <style>
     /* ── Reset & Base ─────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -395,23 +397,23 @@
       #menu-btn.open span:nth-child(2) { opacity: 0; }
       #menu-btn.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
 
-      /* Left col — hidden off screen by default */
+      /* Left col — visible by default on mobile, slides out when menu opens */
       #left-col {
         width: 100vw !important;
-        left: -100vw !important;
+        left: 0 !important;
         top: 0 !important;
         z-index: 200;
         background: #fff;
         transition: left 0.3s ease;
-        padding: 60px 24px 40px 24px !important;
+        padding: 60px 24px 80px 24px !important;
       }
 
-      /* Left col open */
+      /* Left col hidden when menu open (right col showing) */
       #left-col.mobile-open {
-        left: 0 !important;
+        left: -100vw !important;
       }
 
-      /* Overlay behind left col */
+      /* Overlay behind right col */
       #menu-overlay {
         display: none;
         position: fixed;
@@ -421,11 +423,18 @@
       }
       #menu-overlay.open { display: block; }
 
-      /* Right col — full width on mobile */
+      /* Right col — hidden off screen by default, slides in when menu opens */
       #right-col {
-        left: 0 !important;
+        left: 100vw !important;
         width: 100vw !important;
-        padding: 60px 20px 80px 20px !important;
+        padding: 60px 20px 120px 20px !important; /* extra bottom padding */
+        transition: left 0.3s ease;
+        z-index: 201;
+      }
+
+      /* Right col shown when menu open */
+      #right-col.mobile-open {
+        left: 0 !important;
       }
 
       /* Content fixed width on mobile */
@@ -1286,6 +1295,7 @@ The concept from the start was to create a central space where the entire family
   function toggleMenu() {
     document.getElementById('menu-btn').classList.toggle('open');
     document.getElementById('left-col').classList.toggle('mobile-open');
+    document.getElementById('right-col').classList.toggle('mobile-open');
     document.getElementById('menu-overlay').classList.toggle('open');
   }
 
